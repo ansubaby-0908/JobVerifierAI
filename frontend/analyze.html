@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analyze Job</title>
+    <link rel="stylesheet" href="analyze.css">
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <h2>🛡️ Fake Job Detector</h2>
+    <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="login.html">Login</a>
+        <a href="register.html">Register</a>
+    </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+
+    <h1>AI Job Analysis</h1>
+    <p class="subtitle">Paste a job description below to verify its authenticity</p>
+
+    <!-- TEXTAREA -->
+    <textarea id="jobText" placeholder="Paste job posting here..."></textarea>
+
+    <!-- BUTTON BELOW TEXTBOX -->
+    <button onclick="analyzeJob()">Analyze Job</button>
+
+    <!-- RESULT -->
+    <div class="result-box" id="result">
+        <p class="placeholder">Waiting for input...</p>
+    </div>
+
+    <br>
+    <button onclick="logout()">Logout</button>
+
+
+</div>
+
+
+
+<script>
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+</script>
+
+<script>
+if (!localStorage.getItem("role")) {
+    alert("Please login first");
+    window.location.href = "login.html";
+}
+
+async function analyzeJob() {
+    let text = document.getElementById("jobText").value;
+
+    let res = await fetch("http://127.0.0.1:8000/predict", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            description: text
+        })
+    });
+
+    let data = await res.json();
+
+    let result = data.result || "Unknown";
+    let confidence = data.confidence || 0;
+
+    let color = result.includes("Scam") ? "#ff4d4d" :
+                result === "Genuine" ? "#00f5ff" :
+                "#ffcc00";
+
+    document.getElementById("result").innerHTML = `
+        <h2 style="color:${color}">${result}</h2>
+        <p>Confidence: ${(confidence * 100).toFixed(2)}%</p>
+    `;
+    }
+</script>
+
+</body>
+</html>

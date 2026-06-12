@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Admin Panel</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+       
+        body {
+            font-family: Arial;
+            background: url("home.jpg") no-repeat center center/cover; /* SAME IMAGE */
+            background-attachment: fixed;
+            color: white;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+
+            background: rgba(0, 0, 0, 0.5); /* overlay */
+            z-index: -1;
+        }
+
+        .navbar {
+            background: #3b3a1f; /* OLIVE */
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            padding: 20px 40px;
+        }
+
+        button {
+            padding: 8px 14px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            transition: 0.2s;
+
+            background: white;
+            color: black;
+        }
+
+        button:hover {
+            background-color: #e5e5e5;
+            color: black;
+        }
+
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            width: 180px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            transition: 0.3s;
+
+            background: #3b3a1f; 
+            color: white;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.2);
+        }
+
+        .orange, .pink, .blue {
+            background: #3b3a1f;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+            background: #3b3a1f; /* OLIVE */
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+        }
+
+        th {
+            background: rgba(0,0,0,0.2);
+        }
+
+        tr:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+
+        .scam-row {
+            background-color: rgba(255, 0, 0, 0.2);
+            color: #ff4d4d;
+            font-weight: bold;
+        }
+
+ 
+        .caution-row {
+            background-color: rgba(255, 204, 0, 0.2);
+            color: #ffcc00;
+        }
+
+        .charts {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .chart-box {
+            width: 48%;
+            background: #3b3a1f; 
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 250px !important;
+        }
+
+        h2, h3 {
+            margin-top: 30px;
+            color: white;
+        }
+
+    </style>
+</head>
+
+<body>
+
+
+<div class="navbar">
+    <h2>Admin Dashboard</h2>
+    <button onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+    <!-- CARDS -->
+    <div class="cards">
+        <div class="card orange">
+            <h3>Users</h3>
+            <p id="userCount">0</p>
+        </div>
+
+        <div class="card pink">
+            <h3>Jobs</h3>
+            <p id="jobCount">0</p>
+        </div>
+
+        <div class="card blue">
+            <h3>Feedback</h3>
+            <p id="feedbackCount">0</p>
+        </div>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <center>
+        <button onclick="loadUsers()">Users</button>
+        <button onclick="loadJobs()">Jobs</button>
+        <button onclick="loadFeedback()">Feedback</button>
+    </center>
+
+    <!-- USERS -->
+    <h3>Users</h3>
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Email</th><th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <!-- JOBS -->
+    <h3>Jobs</h3>
+    <table id="jobsTable">
+        <thead>
+            <tr>
+                <th>ID</th><th>Result</th><th>Confidence</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <!-- FEEDBACK -->
+    <h3>Feedback</h3>
+    <table id="feedbackTable">
+        <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Email</th><th>Message</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <!-- CHARTS -->
+    <div class="charts">
+        <div class="chart-box">
+            <h3>Job Analysis</h3>
+            <canvas id="pieChart"></canvas>
+        </div>
+
+        <div class="chart-box">
+            <h3>System Overview</h3>
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+// Protect page
+if (localStorage.getItem("role") !== "admin") {
+    alert("Access Denied");
+    window.location.href = "login.html";
+}
+
+// LOAD STATS
+async function loadStats() {
+    let res = await fetch("http://127.0.0.1:8000/admin/stats");
+    let data = await res.json();
+
+    document.getElementById("userCount").innerText = data.users;
+    document.getElementById("jobCount").innerText = data.jobs;
+    document.getElementById("feedbackCount").innerText = data.feedback;
+}
+
+// USERS
+async function loadUsers() {
+    let res = await fetch("http://127.0.0.1:8000/admin/users");
+    let data = await res.json();
+
+    let tbody = document.querySelector("#usersTable tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(user => {
+        tbody.innerHTML += `
+        <tr>
+            <td>${user.id}</td>
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td><button onclick="deleteUser(${user.id})">Delete</button></td>
+        </tr>`;
+    });
+}
+
+// JOBS 
+async function loadJobs() {
+    let res = await fetch("http://127.0.0.1:8000/admin/jobs");
+    let data = await res.json();
+
+    let tbody = document.querySelector("#jobsTable tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(job => {
+
+        let rowClass = "";
+
+        if (job.result.includes("Scam")) {
+            rowClass = "scam-row";
+        } else if (job.result.includes("Caution")) {
+            rowClass = "caution-row";
+        }
+
+        tbody.innerHTML += `
+        <tr class="${rowClass}">
+            <td>${job.id}</td>
+            <td>${job.result}</td>
+            <td>${job.confidence}</td>
+        </tr>`;
+    });
+}
+
+// FEEDBACK
+async function loadFeedback() {
+    let res = await fetch("http://127.0.0.1:8000/admin/feedback");
+    let data = await res.json();
+
+    let tbody = document.querySelector("#feedbackTable tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(fb => {
+        tbody.innerHTML += `
+        <tr>
+            <td>${fb.id}</td>
+            <td>${fb.name}</td>
+            <td>${fb.email}</td>
+            <td>${fb.message}</td>
+        </tr>`;
+    });
+}
+
+// PIE CHART
+async function loadPieChart() {
+    let res = await fetch("http://127.0.0.1:8000/admin/job-stats");
+    let data = await res.json();
+
+    new Chart(document.getElementById("pieChart"), {
+        type: "pie",
+        data: {
+            labels: ["Fake", "Genuine", "Caution"],
+            datasets: [{
+                data: [data.fake, data.genuine, data.caution],
+                backgroundColor: ["#ef4444", "#22c55e", "#facc15"]
+            }]
+        }
+    });
+}
+
+// BAR CHART
+async function loadBarChart() {
+    let res = await fetch("http://127.0.0.1:8000/admin/stats");
+    let data = await res.json();
+
+    new Chart(document.getElementById("barChart"), {
+        type: "bar",
+        data: {
+            labels: ["Users", "Jobs", "Feedback"],
+            datasets: [{
+                data: [data.users, data.jobs, data.feedback],
+                backgroundColor: ["#f97316", "#ec4899", "#1e3a8a"]
+            }]
+        }
+    });
+}
+
+// LOGOUT
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+
+
+loadStats();
+loadPieChart();
+loadBarChart();
+
+</script>
+
+</body>
+</html>

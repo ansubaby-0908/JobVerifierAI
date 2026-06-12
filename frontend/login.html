@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="form.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>LOGIN</h2>
+
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+
+    <button onclick="loginUser()">Login</button>
+
+    <p>Don't have an account? <a href="register.html">Register</a></p>
+</div>
+
+<script>
+async function loginUser() {
+    let email = document.getElementById("email").value;
+    let password = document.getElementById("password").value;
+
+    let res = await fetch(`http://127.0.0.1:8000/login?email=${email}&password=${password}`, {
+        method: "POST"
+    });
+
+    let data = await res.json();
+
+    if (res.status !== 200) {
+        alert(data.detail);
+        return;
+    }
+
+    // Save role
+    localStorage.setItem("role", data.role);
+
+    if (data.role === "admin") {
+        window.location.href = "admin.html";
+    } else {
+        window.location.href = "analyze.html";
+    }
+
+    localStorage.setItem("email", data.email);
+}
+</script>
+
+</body>
+</html>
